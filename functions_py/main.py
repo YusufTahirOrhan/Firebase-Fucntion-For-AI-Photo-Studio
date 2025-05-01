@@ -1,9 +1,8 @@
 # functions/main.py
 #
-# Firebase Python Functions – User profile + coin economy + GPT-Image-1 editing
-# -----------------------------------------------------------------------------
-# • Creates a Firestore /users/{uid} doc with default coins on Auth user creation
-# • Lets clients purchase coins via add_coins callable
+# Firebase Python Functions – coin ekonomisi + GPT-Image-1 görsel düzenleme
+# -------------------------------------------------------------------------
+# • Clients can purchase coins via add_coins callable
 # • On edit_image callable: checks & deducts coins, calls OpenAI image edit, stores result
 
 import os
@@ -17,7 +16,7 @@ from typing import Tuple
 from PIL import Image
 import firebase_admin
 from firebase_admin import credentials, storage, firestore
-from firebase_functions import https_fn, auth_fn, params
+from firebase_functions import https_fn, params
 import openai
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -28,17 +27,16 @@ cred = credentials.Certificate(SERVICE_ACCOUNT)
 try:
     firebase_admin.initialize_app(cred)
 except ValueError:
-    # App already initialized on redeploy
-    pass
+    pass  # App already initialized on redeploy
 
-db = firestore.client()
+FIRESTORE_DB_ID = "creative-studio"
+db = firestore.client(database=FIRESTORE_DB_ID)
 OPENAI_KEY = params.SecretParam("OPENAI_API_KEY")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Constants
 # ──────────────────────────────────────────────────────────────────────────────
 IMAGE_SIZE: Tuple[int, int] = (1024, 1024)
-COIN_START               = 5    # coins new users start with
 COIN_COST_EDIT           = 1    # cost per edit
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -53,24 +51,7 @@ def user_doc(uid: str):
     return db.collection("users").document(uid)
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 1) Automatically create user profile with default coins
-# ──────────────────────────────────────────────────────────────────────────────
-@auth_fn.on_create()
-def create_user_profile(event: auth_fn.AuthCreateEvent) -> None:
-    """
-    Triggered when a new Firebase Auth user is created.
-    Creates a Firestore document at /users/{uid} with initial coin balance.
-    """
-    doc = user_doc(event.uid)
-    doc.set({
-        "email":       event.email,
-        "displayName": event.display_name,
-        "createdAt":   firestore.SERVER_TIMESTAMP,
-        "coin":        COIN_START,
-    })
-
-# ──────────────────────────────────────────────────────────────────────────────
-# 2) Allow clients to add coins after purchase
+# 1) Allow clients to add coins after purchase
 # ──────────────────────────────────────────────────────────────────────────────
 @https_fn.on_call(
     timeout_sec=60,
@@ -79,7 +60,7 @@ def create_user_profile(event: auth_fn.AuthCreateEvent) -> None:
 def add_coins(req: https_fn.CallableRequest) -> dict:
     """
     Client sends verified purchase receipt and amount.
-    (Here we simply trust amount; in production validate receipt!)
+    (In production you must validate the receipt; here we trust the 'amount'.)
     """
     uid    = req.auth.uid if req.auth else None
     amount = req.data.get("amount")
@@ -91,7 +72,7 @@ def add_coins(req: https_fn.CallableRequest) -> dict:
     return {"status": "ok", "added": amount}
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 3) Edit an image via OpenAI – checks & deducts coins
+# 2) Edit an image via OpenAI – checks & deducts coins
 # ──────────────────────────────────────────────────────────────────────────────
 @https_fn.on_call(
     timeout_sec=120,
