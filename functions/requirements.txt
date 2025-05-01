@@ -1,0 +1,5 @@
+openai>=1.10.0
+firebase-functions>=0.1.0
+firebase-admin>=6.4.0
+Pillow
+requests
