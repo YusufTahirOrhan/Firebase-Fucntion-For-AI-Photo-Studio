@@ -29,8 +29,7 @@ try:
 except ValueError:
     pass  # App already initialized on redeploy
 
-FIRESTORE_DB_ID = "creative-studio"
-db = firestore.client(database=FIRESTORE_DB_ID)
+db = firestore.client()
 OPENAI_KEY = params.SecretParam("OPENAI_API_KEY")
 
 # ──────────────────────────────────────────────────────────────────────────────
