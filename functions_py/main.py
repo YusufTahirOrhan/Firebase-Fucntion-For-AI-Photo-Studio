@@ -108,7 +108,7 @@ def edit_image(req: https_fn.CallableRequest) -> dict:
             raise https_fn.HttpsError("failed-precondition", "Insufficient coins.")
         transaction.update(doc_ref, {"coin": current - COIN_COST_EDIT})
 
-    db.transaction(txn)
+    db.run_transaction(txn)
 
     # 2) Download input, prepare image, call OpenAI
     with tempfile.TemporaryDirectory() as tmp:
