@@ -14,7 +14,7 @@ exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
   return db.collection("users").doc(user.uid).set({
     email: user.email || null,
     displayName: user.displayName || null,
-    coin: 5, // default coin balance
+    coin: 0, // default coin balance
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 });
